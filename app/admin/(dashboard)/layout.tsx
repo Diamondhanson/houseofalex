@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, Boxes, LayoutDashboard, LifeBuoy, Settings } from "lucide-react";
+import { getServerAuthClient } from "@/lib/supabase/server-auth";
+import { isAllowedAdmin } from "@/lib/admin";
+import { SignOutButton } from "@/components/admin/SignOutButton";
 
 export const metadata: Metadata = {
   title: "Admin",
   description: "House of Alex management console.",
 };
+
+// The auth gate reads cookies and must run on every request - never prerender.
+export const dynamic = "force-dynamic";
 
 const NAV = [
   { icon: LayoutDashboard, label: "Dashboard", active: true },
@@ -14,11 +21,28 @@ const NAV = [
   { icon: LifeBuoy, label: "Support" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Authoritative gate - must be a signed-in, allowlisted admin.
+  // If Supabase isn't configured yet, this throws → treated as "not signed in".
+  let user: { email?: string } | null = null;
+  try {
+    const supabase = await getServerAuthClient();
+    user = (await supabase.auth.getUser()).data.user;
+  } catch {
+    user = null;
+  }
+
+  if (!user || !isAllowedAdmin(user.email)) {
+    redirect("/admin/login");
+  }
+
+  const email = user.email ?? "";
+  const initials = email.slice(0, 2).toUpperCase();
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
       {/* Sidebar */}
@@ -40,9 +64,7 @@ export default function AdminLayout({
             <span
               key={label}
               className={`flex cursor-default items-center gap-3 px-3 py-2.5 text-sm font-medium ${
-                active
-                  ? "bg-red-50 text-red-700"
-                  : "text-slate-500"
+                active ? "bg-red-50 text-red-700" : "text-slate-500"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -75,13 +97,14 @@ export default function AdminLayout({
             <h1 className="text-sm font-semibold text-slate-900">Management Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden text-right text-xs leading-tight text-slate-500 sm:block">
-              <span className="block font-medium text-slate-900">Alex Mercer</span>
-              Owner · Trade desk
+            <span className="hidden max-w-[14rem] truncate text-right text-xs leading-tight text-slate-500 sm:block">
+              <span className="block font-medium text-slate-900">Signed in</span>
+              {email}
             </span>
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
-              AM
+              {initials}
             </span>
+            <SignOutButton />
           </div>
         </header>
 

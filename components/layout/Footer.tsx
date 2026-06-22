@@ -25,7 +25,7 @@ export function Footer() {
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
               A B2B liquidation house supplying authenticated, original premium
-              stock to resellers, distributors and retail groups — by the pallet,
+              stock to resellers, distributors and retail groups - by the pallet,
               with transparent volume pricing.
             </p>
             <ul className="mt-6 grid gap-2.5">

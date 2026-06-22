@@ -13,11 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { usePallet } from "@/lib/context/PalletContext";
-import { getPallet } from "@/lib/data/pallets";
 import { getCategory } from "@/lib/data/catalog";
 import { formatGBP } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import type { BusinessDetails, OrderPayload } from "@/lib/types";
+import { PhoneInput } from "@/components/ui/PhoneInput";
+import { placeOrder } from "./actions";
+import type { BusinessDetails } from "@/lib/types";
 
 const EMPTY_BUSINESS: BusinessDetails = {
   company: "",
@@ -34,7 +35,7 @@ const EMPTY_BUSINESS: BusinessDetails = {
 
 export default function CheckoutPage() {
   const {
-    items,
+    lines,
     totalPallets,
     totalUnits,
     totalCost,
@@ -42,32 +43,28 @@ export default function CheckoutPage() {
     remove,
     setQty,
     clear,
-    buildOrderPayload,
+    orderItems,
   } = usePallet();
   const [business, setBusiness] = useState<BusinessDetails>(EMPTY_BUSINESS);
-  const [placed, setPlaced] = useState<OrderPayload | null>(null);
+  const [placed, setPlaced] = useState<{ reference: string; email: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const lines = Object.entries(items);
-
-  // --- Stub handler — logs the payload, ready for a Resend email hook ------
-  function handlePlaceOrder(e: FormEvent<HTMLFormElement>) {
+  // --- Submit: server recomputes prices, emails the owner, persists ---------
+  async function handlePlaceOrder(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const payload = buildOrderPayload(business);
+    setSubmitting(true);
+    setError(null);
 
-    // TODO(resend): POST this payload to a server action / route handler that
-    // calls Resend to email the trade desk + an acknowledgement to the buyer.
-    console.log("[handlePlaceOrder] Wholesale order payload:", payload);
-    console.table(
-      payload.lines.map((l) => ({
-        Pallet: l.name,
-        Units: l.pieces,
-        Qty: l.quantity,
-        "Pallet £": l.unitPrice,
-        Line: l.lineTotal,
-      })),
-    );
+    const result = await placeOrder({ items: orderItems(), business });
 
-    setPlaced(payload);
+    setSubmitting(false);
+    if (!result.ok || !result.reference) {
+      setError(result.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+
+    setPlaced({ reference: result.reference, email: business.email });
     clear();
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -81,18 +78,14 @@ export default function CheckoutPage() {
             <CheckCircle2 className="h-9 w-9" />
           </span>
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Order request submitted
+            Order received
           </h1>
           <p className="mt-3 text-slate-600">
             Reference{" "}
             <span className="font-mono font-semibold text-emerald-700">{placed.reference}</span>.
-            Our trade desk will review your order and issue a proforma invoice to{" "}
-            <span className="font-medium text-slate-900">{placed.business.email}</span>.
+            Your order has been received by our team. We&apos;ll be in touch shortly at{" "}
+            <span className="font-medium text-slate-900">{placed.email}</span> to confirm.
           </p>
-          <div className="mt-6 inline-flex items-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
-            <Info className="h-4 w-4 text-red-600" />
-            The order payload was logged to the console (ready for the Resend hook).
-          </div>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <ButtonLink href="/shop">Continue shopping</ButtonLink>
             <ButtonLink href="/" variant="secondary">
@@ -145,7 +138,7 @@ export default function CheckoutPage() {
             Cart & invoice request
           </h1>
           <p className="mt-2 max-w-2xl text-slate-600">
-            Review your pallets and delivery details. No payment is taken — we&apos;ll issue a
+            Review your pallets and delivery details. No payment is taken - we&apos;ll issue a
             proforma invoice.
           </p>
         </div>
@@ -180,12 +173,10 @@ export default function CheckoutPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {lines.map(([palletId, qty]) => {
-                    const pallet = getPallet(palletId);
-                    const category = pallet ? getCategory(pallet.categoryId) : undefined;
-                    if (!pallet) return null;
+                  {lines.map(({ pallet, qty }) => {
+                    const category = getCategory(pallet.categoryId);
                     return (
-                      <tr key={palletId}>
+                      <tr key={pallet.id}>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -207,7 +198,7 @@ export default function CheckoutPage() {
                           <div className="mx-auto flex h-9 w-28 items-stretch border border-slate-300">
                             <button
                               type="button"
-                              onClick={() => remove(palletId)}
+                              onClick={() => remove(pallet.id)}
                               aria-label="Decrease"
                               className="flex w-9 items-center justify-center text-slate-700 hover:bg-slate-100"
                             >
@@ -216,7 +207,7 @@ export default function CheckoutPage() {
                             <input
                               value={qty}
                               onChange={(e) =>
-                                setQty(palletId, Number(e.target.value.replace(/\D/g, "")) || 0)
+                                setQty(pallet, Number(e.target.value.replace(/\D/g, "")) || 0)
                               }
                               inputMode="numeric"
                               className="w-full border-x border-slate-300 text-center text-sm font-semibold text-slate-900 focus:outline-none"
@@ -224,7 +215,7 @@ export default function CheckoutPage() {
                             />
                             <button
                               type="button"
-                              onClick={() => add(palletId)}
+                              onClick={() => add(pallet)}
                               aria-label="Increase"
                               className="flex w-9 items-center justify-center text-slate-700 hover:bg-slate-100"
                             >
@@ -241,7 +232,7 @@ export default function CheckoutPage() {
                         <td className="px-5 py-4 text-right">
                           <button
                             type="button"
-                            onClick={() => setQty(palletId, 0)}
+                            onClick={() => setQty(pallet, 0)}
                             className="text-slate-400 transition-colors hover:text-red-600"
                             aria-label={`Remove ${pallet.name}`}
                           >
@@ -262,15 +253,6 @@ export default function CheckoutPage() {
               Business & delivery details
             </h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Company name" required>
-                <input
-                  required
-                  value={business.company}
-                  onChange={(e) => setBusiness({ ...business, company: e.target.value })}
-                  className={inputCls}
-                  placeholder="Northgate Trading Ltd"
-                />
-              </Field>
               <Field label="Contact name" required>
                 <input
                   required
@@ -280,67 +262,21 @@ export default function CheckoutPage() {
                   placeholder="Jane Doe"
                 />
               </Field>
-              <Field label="Business email" required>
+              <Field label="Email" required>
                 <input
                   required
                   type="email"
                   value={business.email}
                   onChange={(e) => setBusiness({ ...business, email: e.target.value })}
                   className={inputCls}
-                  placeholder="orders@company.com"
+                  placeholder="you@company.com"
                 />
               </Field>
               <Field label="Phone" required>
-                <input
-                  required
+                <PhoneInput
                   value={business.phone}
-                  onChange={(e) => setBusiness({ ...business, phone: e.target.value })}
-                  className={inputCls}
-                  placeholder="+44 20 1234 5678"
-                />
-              </Field>
-              <Field label="VAT / EORI number">
-                <input
-                  value={business.vatNumber}
-                  onChange={(e) => setBusiness({ ...business, vatNumber: e.target.value })}
-                  className={inputCls}
-                  placeholder="GB123456789"
-                />
-              </Field>
-              <Field label="Country" required>
-                <input
+                  onChange={(v) => setBusiness({ ...business, phone: v })}
                   required
-                  value={business.country}
-                  onChange={(e) => setBusiness({ ...business, country: e.target.value })}
-                  className={inputCls}
-                  placeholder="United Kingdom"
-                />
-              </Field>
-              <Field label="Delivery address" required className="sm:col-span-2">
-                <input
-                  required
-                  value={business.addressLine1}
-                  onChange={(e) => setBusiness({ ...business, addressLine1: e.target.value })}
-                  className={inputCls}
-                  placeholder="Unit 4, Dockside Industrial Estate"
-                />
-              </Field>
-              <Field label="City" required>
-                <input
-                  required
-                  value={business.city}
-                  onChange={(e) => setBusiness({ ...business, city: e.target.value })}
-                  className={inputCls}
-                  placeholder="Felixstowe"
-                />
-              </Field>
-              <Field label="Postcode" required>
-                <input
-                  required
-                  value={business.postcode}
-                  onChange={(e) => setBusiness({ ...business, postcode: e.target.value })}
-                  className={inputCls}
-                  placeholder="IP11 3SY"
                 />
               </Field>
               <Field label="Order notes" className="sm:col-span-2">
@@ -354,9 +290,24 @@ export default function CheckoutPage() {
               </Field>
             </div>
           </section>
+
+          {/* Submit - below the form */}
+          <div>
+            {error && (
+              <div className="mb-3 border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+              {submitting ? "Submitting…" : "Place Wholesale Order"}
+            </Button>
+            <p className="mt-3 text-center text-[11px] text-slate-500">
+              By submitting you confirm these are trade-only B2B purchase intentions.
+            </p>
+          </div>
         </div>
 
-        {/* Order summary / submit — no payment layer */}
+        {/* Order summary - no payment layer */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <div className="border border-slate-200 bg-white p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
@@ -383,13 +334,6 @@ export default function CheckoutPage() {
               <Info className="mb-1 inline h-3.5 w-3.5 text-red-600" /> No payment is processed
               here. Submitting requests a manual proforma invoice from our trade desk.
             </div>
-
-            <Button type="submit" size="lg" className="mt-5 w-full">
-              Place Wholesale Order &amp; Request Invoice
-            </Button>
-            <p className="mt-3 text-center text-[11px] text-slate-500">
-              By submitting you confirm these are trade-only B2B purchase intentions.
-            </p>
           </div>
         </aside>
       </form>

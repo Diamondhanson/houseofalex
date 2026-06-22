@@ -15,7 +15,7 @@ export function PalletCard({ pallet }: { pallet: Pallet }) {
 
   return (
     <article className="flex flex-col border border-slate-200 bg-white transition-colors hover:border-slate-300">
-      {/* Image — links to detail */}
+      {/* Image - links to detail */}
       <Link href={href} className="group relative block aspect-[4/3] overflow-hidden bg-slate-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -67,7 +67,7 @@ export function PalletCard({ pallet }: { pallet: Pallet }) {
           {qty === 0 ? (
             <button
               type="button"
-              onClick={() => add(pallet.id)}
+              onClick={() => add(pallet)}
               className="flex h-11 w-full items-center justify-center gap-2 bg-red-600 text-sm font-semibold text-white transition-colors hover:bg-red-700"
             >
               <ShoppingCart className="h-4 w-4" />
@@ -89,7 +89,7 @@ export function PalletCard({ pallet }: { pallet: Pallet }) {
               </span>
               <button
                 type="button"
-                onClick={() => add(pallet.id)}
+                onClick={() => add(pallet)}
                 aria-label="Add one"
                 className="flex w-11 items-center justify-center text-slate-700 transition-colors hover:bg-slate-100"
               >

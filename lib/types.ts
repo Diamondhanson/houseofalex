@@ -13,7 +13,7 @@ export interface Category {
   image: string;
 }
 
-/** A ready-to-ship bulk pallet — the product listed on the storefront. */
+/** A ready-to-ship bulk pallet - the product listed on the storefront. */
 export interface Pallet {
   id: string;
   name: string;
@@ -28,7 +28,12 @@ export interface Pallet {
   brands: string[];
   /** Short condition / contents note. */
   condition: string;
+  /** Primary/cover image. */
   image: string;
+  /** All images for the pallet (1–4). Cover is images[0]. */
+  images?: string[];
+  /** Whether the pallet is published to the storefront (admin view). */
+  active?: boolean;
 }
 
 export interface Brand {

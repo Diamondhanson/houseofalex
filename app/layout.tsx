@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "House of Alex — B2B Wholesale Liquidation",
+    default: "House of Alex - B2B Wholesale Liquidation",
     template: "%s · House of Alex",
   },
   description:
-    "Authenticated, original premium wholesale stock — perfumes, cosmetics, clothing and electronics — sold by the pallet with automated volume pricing.",
+    "Authenticated, original premium wholesale stock - perfumes, cosmetics, clothing and electronics - sold by the pallet with automated volume pricing.",
 };
 
 export default function RootLayout({

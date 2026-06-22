@@ -1,8 +1,9 @@
 "use client";
 
-// Simple e-commerce cart of bulk pallets. Self-contained (React context +
-// useReducer) for instant reactivity. A future Supabase/persisted-cart layer
-// can wrap or replace the reducer without touching consumers.
+// Simple e-commerce cart of bulk pallets. Stores a full snapshot of each pallet
+// (not just an id) so it works regardless of where the catalogue comes from -
+// the static seed or Supabase-uploaded pallets. Self-contained (React context +
+// useReducer) for instant reactivity.
 
 import {
   createContext,
@@ -11,19 +12,22 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
-import { PALLETS, getPallet } from "@/lib/data/pallets";
-import { getCategory } from "@/lib/data/catalog";
-import type { CartItems, OrderPayload, BusinessDetails } from "@/lib/types";
-import { makeOrderReference } from "@/lib/format";
+import type { Pallet } from "@/lib/types";
+
+interface Line {
+  pallet: Pallet;
+  qty: number;
+}
+type Items = Record<string, Line>; // palletId -> line
 
 interface CartState {
-  items: CartItems; // palletId -> qty
+  items: Items;
 }
 
 type Action =
-  | { type: "ADD"; palletId: string }
+  | { type: "ADD"; pallet: Pallet }
   | { type: "REMOVE"; palletId: string }
-  | { type: "SET_QTY"; palletId: string; qty: number }
+  | { type: "SET_QTY"; pallet: Pallet; qty: number }
   | { type: "CLEAR" };
 
 const initialState: CartState = { items: {} };
@@ -31,22 +35,24 @@ const initialState: CartState = { items: {} };
 function reducer(state: CartState, action: Action): CartState {
   switch (action.type) {
     case "ADD": {
-      const next = (state.items[action.palletId] ?? 0) + 1;
-      return { items: { ...state.items, [action.palletId]: next } };
+      const id = action.pallet.id;
+      const qty = (state.items[id]?.qty ?? 0) + 1;
+      return { items: { ...state.items, [id]: { pallet: action.pallet, qty } } };
     }
     case "REMOVE": {
-      const current = state.items[action.palletId] ?? 0;
+      const current = state.items[action.palletId]?.qty ?? 0;
       if (current <= 0) return state;
       const items = { ...state.items };
       if (current - 1 === 0) delete items[action.palletId];
-      else items[action.palletId] = current - 1;
+      else items[action.palletId] = { ...items[action.palletId], qty: current - 1 };
       return { items };
     }
     case "SET_QTY": {
+      const id = action.pallet.id;
       const qty = Math.max(0, Math.floor(action.qty));
       const items = { ...state.items };
-      if (qty === 0) delete items[action.palletId];
-      else items[action.palletId] = qty;
+      if (qty === 0) delete items[id];
+      else items[id] = { pallet: action.pallet, qty };
       return { items };
     }
     case "CLEAR":
@@ -57,18 +63,18 @@ function reducer(state: CartState, action: Action): CartState {
 }
 
 interface CartContextValue {
-  items: CartItems;
-  /** Number of distinct pallet selections / total pallet count. */
+  items: Items;
+  lines: Line[];
   totalPallets: number;
-  /** Total physical units across all pallets. */
   totalUnits: number;
   totalCost: number;
   qtyOf: (palletId: string) => number;
-  add: (palletId: string) => void;
+  add: (pallet: Pallet) => void;
   remove: (palletId: string) => void;
-  setQty: (palletId: string, qty: number) => void;
+  setQty: (pallet: Pallet, qty: number) => void;
   clear: () => void;
-  buildOrderPayload: (business: BusinessDetails) => OrderPayload;
+  /** Minimal item list to send to the server for recompute + persistence. */
+  orderItems: () => Array<{ palletId: string; quantity: number }>;
 }
 
 const PalletContext = createContext<CartContextValue | null>(null);
@@ -77,52 +83,29 @@ export function PalletProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const value = useMemo<CartContextValue>(() => {
+    const lines = Object.values(state.items);
     let totalPallets = 0;
     let totalUnits = 0;
     let totalCost = 0;
-    for (const [palletId, qty] of Object.entries(state.items)) {
-      const pallet = getPallet(palletId);
+    for (const { pallet, qty } of lines) {
       totalPallets += qty;
-      if (pallet) {
-        totalUnits += qty * pallet.pieces;
-        totalCost += qty * pallet.price;
-      }
+      totalUnits += qty * pallet.pieces;
+      totalCost += qty * pallet.price;
     }
 
     return {
       items: state.items,
+      lines,
       totalPallets,
       totalUnits,
       totalCost,
-      qtyOf: (palletId) => state.items[palletId] ?? 0,
-      add: (palletId) => dispatch({ type: "ADD", palletId }),
+      qtyOf: (palletId) => state.items[palletId]?.qty ?? 0,
+      add: (pallet) => dispatch({ type: "ADD", pallet }),
       remove: (palletId) => dispatch({ type: "REMOVE", palletId }),
-      setQty: (palletId, qty) => dispatch({ type: "SET_QTY", palletId, qty }),
+      setQty: (pallet, qty) => dispatch({ type: "SET_QTY", pallet, qty }),
       clear: () => dispatch({ type: "CLEAR" }),
-      buildOrderPayload: (business) => {
-        const lines = Object.entries(state.items).map(([palletId, quantity]) => {
-          const pallet = getPallet(palletId);
-          const category = pallet ? getCategory(pallet.categoryId) : undefined;
-          return {
-            palletId,
-            name: pallet?.name ?? palletId,
-            categoryLabel: category?.label ?? "—",
-            pieces: pallet?.pieces ?? 0,
-            unitPrice: pallet?.price ?? 0,
-            quantity,
-            lineTotal: (pallet?.price ?? 0) * quantity,
-          };
-        });
-        return {
-          reference: makeOrderReference(),
-          lines,
-          totalPallets,
-          totalUnits,
-          totalCost,
-          business,
-          submittedAt: new Date().toISOString(),
-        };
-      },
+      orderItems: () =>
+        lines.map(({ pallet, qty }) => ({ palletId: pallet.id, quantity: qty })),
     };
   }, [state]);
 
@@ -134,6 +117,3 @@ export function usePallet() {
   if (!ctx) throw new Error("usePallet must be used within a PalletProvider");
   return ctx;
 }
-
-/** Convenience: the full pallet catalogue. */
-export const ALL_PALLETS = PALLETS;

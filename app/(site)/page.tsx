@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
 import { CATEGORIES } from "@/lib/data/catalog";
-import { PALLETS } from "@/lib/data/pallets";
+import { getStorefrontPallets } from "@/lib/data/pallets-source";
 import { PalletCard } from "@/components/shop/PalletCard";
+
+export const dynamic = "force-dynamic";
 
 const HERO_IMG =
   "https://images.unsplash.com/photo-1601598851547-4302969d0614?auto=format&fit=crop&w=1100&q=70";
@@ -27,13 +29,13 @@ const PROCESS = [
     icon: ShoppingBag,
     step: "02",
     title: "Build Your Order",
-    body: "Add the pallets you want to your cart and adjust quantities — totals update instantly.",
+    body: "Add the pallets you want to your cart and adjust quantities - totals update instantly.",
   },
   {
     icon: ClipboardList,
     step: "03",
     title: "Receive Manual Invoice",
-    body: "Submit your order. No online payment — our trade desk issues a proforma invoice for settlement.",
+    body: "Submit your order. No online payment - our trade desk issues a proforma invoice for settlement.",
   },
 ];
 
@@ -44,8 +46,8 @@ const STATS = [
   { value: "1,200+", label: "Pallets shipped to trade" },
 ];
 
-export default function HomePage() {
-  const featured = PALLETS.slice(0, 3);
+export default async function HomePage() {
+  const featured = (await getStorefrontPallets()).slice(0, 3);
 
   return (
     <div className="bg-white">

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
-// Sharp, square corporate buttons — no glow, 1px borders.
+// Sharp, square corporate buttons - no glow, 1px borders.
 const base =
   "inline-flex items-center justify-center gap-2 font-semibold tracking-tight transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40";
 

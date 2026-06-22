@@ -1,14 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ImageIcon, Layers, Pencil, Plus, Tag, Trash2, UploadCloud } from "lucide-react";
 import { CATEGORIES, PALLET_TIERS } from "@/lib/data/catalog";
-import { PALLETS } from "@/lib/data/pallets";
 import { formatGBP } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { SideSheet } from "@/components/admin/SideSheet";
 import { cn } from "@/lib/cn";
-import type { CategoryId } from "@/lib/types";
+import type { CategoryId, Pallet } from "@/lib/types";
+import {
+  createPallet,
+  updatePallet,
+  deletePallet,
+  setPalletActive,
+  type PalletInput,
+} from "@/app/admin/(dashboard)/actions";
+
+// Each pallet (offer) can carry up to 4 images.
+const MAX_IMAGES = 4;
 
 // Admin-side pallet record = storefront Pallet + a publish flag.
 interface PalletDraft {
@@ -19,11 +29,11 @@ interface PalletDraft {
   unitPrice: number;
   brands: string; // comma-separated in the form
   condition: string;
-  image: string;
+  images: string[]; // 1..MAX_IMAGES
   active: boolean;
 }
 
-const seed: PalletDraft[] = PALLETS.map((p) => ({
+const toDraft = (p: Pallet): PalletDraft => ({
   id: p.id,
   name: p.name,
   categoryId: p.categoryId,
@@ -31,9 +41,9 @@ const seed: PalletDraft[] = PALLETS.map((p) => ({
   unitPrice: p.unitPrice,
   brands: p.brands.join(", "),
   condition: p.condition,
-  image: p.image,
-  active: true,
-}));
+  images: p.images && p.images.length ? p.images : [p.image].filter(Boolean),
+  active: p.active ?? true,
+});
 
 const blank = (): PalletDraft => ({
   id: "",
@@ -43,56 +53,121 @@ const blank = (): PalletDraft => ({
   unitPrice: 14.4,
   brands: "",
   condition: "",
-  image: "",
+  images: [""],
   active: true,
 });
 
 const labelFor = (id: string) => CATEGORIES.find((c) => c.id === id)?.label ?? id;
 const totalPrice = (d: PalletDraft) => Math.round(d.pieces * d.unitPrice * 100) / 100;
+const coverImage = (d: PalletDraft) => d.images.find((src) => src) ?? "";
+const imageCount = (d: PalletDraft) => d.images.filter((src) => src).length;
 
-export function PalletsManager() {
-  const [pallets, setPallets] = useState<PalletDraft[]>(seed);
+const toInput = (d: PalletDraft): PalletInput => ({
+  name: d.name,
+  categoryId: d.categoryId,
+  pieces: d.pieces,
+  unitPrice: d.unitPrice,
+  price: totalPrice(d),
+  brands: d.brands.split(",").map((b) => b.trim()).filter(Boolean),
+  condition: d.condition,
+  images: d.images.filter((s) => s.trim()),
+  active: d.active,
+});
+
+export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] }) {
+  const router = useRouter();
+  const [pallets, setPallets] = useState<PalletDraft[]>(initialPallets.map(toDraft));
   const [categories, setCategories] = useState(CATEGORIES);
   const [brackets, setBrackets] = useState(PALLET_TIERS.map((t) => ({ ...t })));
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draft, setDraft] = useState<PalletDraft>(blank());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
 
   function openAdd() {
     setDraft(blank());
     setEditingId(null);
+    setSheetError(null);
     setSheetOpen(true);
   }
 
   function openEdit(p: PalletDraft) {
-    setDraft({ ...p });
+    setDraft({ ...p, images: [...p.images] });
     setEditingId(p.id);
+    setSheetError(null);
     setSheetOpen(true);
   }
 
-  function save() {
-    if (!draft.name.trim()) return;
-    // TODO(supabase): upsert into `pallets`; upload image to Storage / Blob.
-    if (editingId) {
-      setPallets((prev) => prev.map((p) => (p.id === editingId ? { ...draft, id: editingId } : p)));
-      console.log("[admin] pallet updated:", { ...draft, id: editingId, price: totalPrice(draft) });
-    } else {
-      const id = `pal-${Date.now()}`;
-      const created = { ...draft, id };
-      setPallets((prev) => [created, ...prev]);
-      console.log("[admin] pallet uploaded:", { ...created, price: totalPrice(created) });
+  async function save() {
+    if (!draft.name.trim()) {
+      setSheetError("Pallet name is required.");
+      return;
     }
+    setSaving(true);
+    setSheetError(null);
+    const input = toInput(draft);
+    const result = editingId
+      ? await updatePallet(editingId, input)
+      : await createPallet(input);
+    setSaving(false);
+
+    if (!result.ok) {
+      setSheetError(result.error ?? "Could not save the pallet.");
+      return;
+    }
+
+    const saved: PalletDraft = {
+      ...draft,
+      id: result.id ?? editingId ?? draft.id,
+      images: input.images.length ? input.images : [""],
+    };
+    setPallets((prev) =>
+      editingId ? prev.map((p) => (p.id === editingId ? saved : p)) : [saved, ...prev],
+    );
     setSheetOpen(false);
+    router.refresh();
   }
 
-  function remove(id: string) {
-    setPallets((prev) => prev.filter((p) => p.id !== id));
-    console.log("[admin] pallet removed:", id);
+  async function remove(id: string) {
+    const prev = pallets;
+    setPallets((p) => p.filter((x) => x.id !== id)); // optimistic
+    const result = await deletePallet(id);
+    if (!result.ok) {
+      setPallets(prev); // rollback
+      return;
+    }
+    router.refresh();
   }
 
-  function toggle(id: string) {
-    setPallets((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
+  async function toggle(id: string) {
+    const target = pallets.find((p) => p.id === id);
+    if (!target) return;
+    const next = !target.active;
+    setPallets((prev) => prev.map((p) => (p.id === id ? { ...p, active: next } : p))); // optimistic
+    const result = await setPalletActive(id, next);
+    if (!result.ok) {
+      setPallets((prev) => prev.map((p) => (p.id === id ? { ...p, active: !next } : p))); // rollback
+      return;
+    }
+    router.refresh();
+  }
+
+  // --- image slots (1..MAX_IMAGES per pallet) ---
+  function addImage() {
+    setDraft((d) => (d.images.length >= MAX_IMAGES ? d : { ...d, images: [...d.images, ""] }));
+  }
+  function removeImage(index: number) {
+    setDraft((d) =>
+      d.images.length <= 1 ? d : { ...d, images: d.images.filter((_, i) => i !== index) },
+    );
+  }
+  function updateImage(index: number, value: string) {
+    setDraft((d) => ({
+      ...d,
+      images: d.images.map((src, i) => (i === index ? value : src)),
+    }));
   }
 
   function deleteCategory(id: string) {
@@ -142,22 +217,33 @@ export function PalletsManager() {
                 <tr key={p.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      {p.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          loading="lazy"
-                          className="h-11 w-11 shrink-0 border border-slate-200 object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-slate-200 bg-slate-50 text-slate-400">
-                          <ImageIcon className="h-4 w-4" />
-                        </span>
-                      )}
+                      <div className="relative shrink-0">
+                        {coverImage(p) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={coverImage(p)}
+                            alt={p.name}
+                            loading="lazy"
+                            className="h-11 w-11 border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-11 w-11 items-center justify-center border border-slate-200 bg-slate-50 text-slate-400">
+                            <ImageIcon className="h-4 w-4" />
+                          </span>
+                        )}
+                        {imageCount(p) > 1 && (
+                          <span
+                            className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center gap-0.5 bg-red-600 px-1 text-[10px] font-bold text-white"
+                            title={`${imageCount(p)} images`}
+                          >
+                            <ImageIcon className="h-2.5 w-2.5" />
+                            {imageCount(p)}
+                          </span>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <div className="font-medium text-slate-900">{p.name || "Untitled"}</div>
-                        <div className="truncate text-xs text-slate-500">{p.brands || "—"}</div>
+                        <div className="truncate text-xs text-slate-500">{p.brands || "-"}</div>
                       </div>
                     </div>
                   </td>
@@ -302,48 +388,100 @@ export function PalletsManager() {
             : "Add a new pallet to the storefront catalogue."
         }
         footer={
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setSheetOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={save}>
-              {editingId ? "Save changes" : "Publish pallet"}
-            </Button>
+          <div>
+            {sheetError && (
+              <div className="mb-3 border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {sheetError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setSheetOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={save} disabled={saving}>
+                {saving ? "Saving…" : editingId ? "Save changes" : "Publish pallet"}
+              </Button>
+            </div>
           </div>
         }
       >
         <div className="space-y-5">
-          {/* Image: live preview from URL + upload placeholder */}
-          <SheetField label="Pallet image">
-            {draft.image ? (
-              <div className="relative border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={draft.image}
-                  alt="Pallet preview"
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setDraft({ ...draft, image: "" })}
-                  className="absolute right-2 top-2 bg-white/90 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white"
-                >
-                  Replace
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
-                <UploadCloud className="h-7 w-7 text-slate-400" />
-                <p className="mt-2 text-sm font-medium text-slate-700">Drag & drop (mock)</p>
-                <p className="text-xs text-slate-500">or paste an image URL below</p>
-              </div>
-            )}
-            <input
-              value={draft.image}
-              onChange={(e) => setDraft({ ...draft, image: e.target.value })}
-              className={`${inputCls} mt-2`}
-              placeholder="https://…/pallet.jpg"
-            />
+          {/* Images - up to MAX_IMAGES per offer */}
+          <SheetField label={`Pallet images (${imageCount(draft)}/${MAX_IMAGES})`}>
+            <p className="-mt-0.5 mb-2 text-xs text-slate-500">
+              Add up to {MAX_IMAGES} images. The first becomes the cover image.
+            </p>
+            <div className="space-y-3">
+              {draft.images.map((src, i) => (
+                <div key={i} className="border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Image {i + 1}
+                      {i === 0 && (
+                        <span className="ml-1.5 font-normal normal-case text-red-600">· cover</span>
+                      )}
+                    </span>
+                    {draft.images.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="flex h-6 w-6 items-center justify-center text-slate-400 transition-colors hover:text-red-600"
+                        aria-label={`Remove image ${i + 1}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {src ? (
+                    <div className="relative mt-2 border border-slate-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`Pallet image ${i + 1}`}
+                        className="aspect-[4/3] w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateImage(i, "")}
+                        className="absolute right-2 top-2 bg-white/90 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white"
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex flex-col items-center justify-center border border-dashed border-slate-300 bg-white px-4 py-5 text-center">
+                      <UploadCloud className="h-6 w-6 text-slate-400" />
+                      <p className="mt-1.5 text-xs font-medium text-slate-700">Drag & drop (mock)</p>
+                      <p className="text-[11px] text-slate-500">or paste an image URL below</p>
+                    </div>
+                  )}
+                  <input
+                    value={src}
+                    onChange={(e) => updateImage(i, e.target.value)}
+                    className={`${inputCls} mt-2`}
+                    placeholder="https://…/pallet.jpg"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addImage}
+              disabled={draft.images.length >= MAX_IMAGES}
+              className="mt-3 flex w-full items-center justify-center gap-2 border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Plus className="h-4 w-4" />
+              {draft.images.length >= MAX_IMAGES
+                ? "Maximum of 4 images reached"
+                : "Add another image"}
+            </button>
           </SheetField>
 
           <SheetField label="Pallet name" required>

@@ -24,7 +24,7 @@ const VALUES = [
   {
     icon: BadgeCheck,
     title: "Authenticated sourcing",
-    body: "Every pallet is drawn from original-source, traceable stock — no grey-market substitutions.",
+    body: "Every pallet is drawn from original-source, traceable stock - no grey-market substitutions.",
   },
   {
     icon: Layers,
@@ -52,7 +52,7 @@ const STEPS = [
   {
     n: "02",
     title: "Build Your Order",
-    body: "Add pallets to your cart and adjust quantities — totals update instantly.",
+    body: "Add pallets to your cart and adjust quantities - totals update instantly.",
   },
   {
     n: "03",
@@ -76,8 +76,8 @@ export default function AboutPage() {
               A liquidation house built for serious trade buyers.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
-              House of Alex consolidates authenticated, original premium stock —
-              perfumes, cosmetics and footwear — and makes it available to resellers and
+              House of Alex consolidates authenticated, original premium stock -
+              perfumes, cosmetics and footwear - and makes it available to resellers and
               distributors by the pallet, with pricing that scales with volume.
             </p>
           </div>

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Eye, Search } from "lucide-react";
-import { DUMMY_ORDERS } from "@/lib/data/orders";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatGBP, formatDate } from "@/lib/format";
 import type { AdminOrder, OrderStatus } from "@/lib/types";
@@ -18,13 +17,13 @@ const FILTERS: Array<{ id: OrderStatus | "all"; label: string }> = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
-export function OrdersTable() {
+export function OrdersTable({ allOrders }: { allOrders: AdminOrder[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [selected, setSelected] = useState<AdminOrder | null>(null);
 
   const orders = useMemo(() => {
-    return DUMMY_ORDERS.filter((o) => {
+    return allOrders.filter((o) => {
       const matchesFilter = filter === "all" || o.status === filter;
       const q = query.trim().toLowerCase();
       const matchesQuery =
@@ -34,7 +33,7 @@ export function OrdersTable() {
         o.contactName.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [query, filter]);
+  }, [query, filter, allOrders]);
 
   const revenue = orders
     .filter((o) => o.status !== "cancelled")

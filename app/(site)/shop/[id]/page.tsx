@@ -2,15 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Boxes, ShieldCheck, Truck } from "lucide-react";
-import { PALLETS, getPallet, getPalletsByCategory } from "@/lib/data/pallets";
+import { getStorefrontPallet, getStorefrontPallets } from "@/lib/data/pallets-source";
 import { getCategory } from "@/lib/data/catalog";
 import { PalletPurchasePanel } from "@/components/shop/PalletPurchasePanel";
 import { PalletCard } from "@/components/shop/PalletCard";
 
-// Pre-render every pallet detail page at build time.
-export function generateStaticParams() {
-  return PALLETS.map((p) => ({ id: p.id }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -18,11 +15,11 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const pallet = getPallet(id);
+  const pallet = await getStorefrontPallet(id);
   if (!pallet) return { title: "Pallet not found" };
   return {
     title: pallet.name,
-    description: `${pallet.name} — ${pallet.pieces} units from ${pallet.brands.join(", ")}. ${pallet.condition}.`,
+    description: `${pallet.name} - ${pallet.pieces} units from ${pallet.brands.join(", ")}. ${pallet.condition}.`,
   };
 }
 
@@ -38,12 +35,12 @@ export default async function PalletDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const pallet = getPallet(id);
+  const pallet = await getStorefrontPallet(id);
   if (!pallet) notFound();
 
   const category = getCategory(pallet.categoryId);
-  const related = getPalletsByCategory(pallet.categoryId)
-    .filter((p) => p.id !== pallet.id)
+  const related = (await getStorefrontPallets())
+    .filter((p) => p.categoryId === pallet.categoryId && p.id !== pallet.id)
     .slice(0, 3);
 
   return (

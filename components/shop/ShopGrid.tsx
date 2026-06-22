@@ -3,23 +3,28 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { PALLETS } from "@/lib/data/pallets";
 import { CATEGORIES } from "@/lib/data/catalog";
 import { usePallet } from "@/lib/context/PalletContext";
 import { formatGBP } from "@/lib/format";
 import { PalletCard } from "@/components/shop/PalletCard";
 import { cn } from "@/lib/cn";
-import type { CategoryId } from "@/lib/types";
+import type { CategoryId, Pallet } from "@/lib/types";
 
 type Filter = "all" | CategoryId;
 
-export function ShopGrid({ initialCategory }: { initialCategory: Filter }) {
+export function ShopGrid({
+  initialCategory,
+  allPallets,
+}: {
+  initialCategory: Filter;
+  allPallets: Pallet[];
+}) {
   const [filter, setFilter] = useState<Filter>(initialCategory);
   const { totalPallets, totalCost } = usePallet();
 
   const pallets = useMemo(
-    () => (filter === "all" ? PALLETS : PALLETS.filter((p) => p.categoryId === filter)),
-    [filter],
+    () => (filter === "all" ? allPallets : allPallets.filter((p) => p.categoryId === filter)),
+    [filter, allPallets],
   );
 
   const tabs: Array<{ id: Filter; label: string }> = [

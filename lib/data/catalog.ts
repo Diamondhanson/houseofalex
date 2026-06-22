@@ -1,4 +1,4 @@
-// Static dummy catalog. Swap these exports for Supabase queries later —
+// Static dummy catalog. Swap these exports for Supabase queries later -
 // the shapes intentionally mirror what a `categories` / `brands` / `products`
 // schema would return.
 
@@ -44,7 +44,7 @@ export const CATEGORIES: Category[] = [
   {
     id: "perfume-mini",
     label: "Mini Sets",
-    tagline: "Travel & discovery sets — high sell-through gifting stock.",
+    tagline: "Travel & discovery sets - high sell-through gifting stock.",
     image:
       "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&w=800&q=70",
   },

@@ -36,7 +36,7 @@ export function PalletPurchasePanel({ pallet }: { pallet: Pallet }) {
       {qty === 0 ? (
         <button
           type="button"
-          onClick={() => add(pallet.id)}
+          onClick={() => add(pallet)}
           className="flex h-12 w-full items-center justify-center gap-2 bg-red-600 text-sm font-semibold text-white transition-colors hover:bg-red-700"
         >
           <ShoppingCart className="h-4 w-4" />
@@ -59,7 +59,7 @@ export function PalletPurchasePanel({ pallet }: { pallet: Pallet }) {
             </span>
             <button
               type="button"
-              onClick={() => add(pallet.id)}
+              onClick={() => add(pallet)}
               aria-label="Add one"
               className="flex w-12 items-center justify-center text-slate-700 transition-colors hover:bg-slate-100"
             >
@@ -77,7 +77,7 @@ export function PalletPurchasePanel({ pallet }: { pallet: Pallet }) {
       )}
 
       <p className="mt-4 text-center text-xs text-slate-500">
-        No payment online — checkout requests a proforma invoice.
+        No payment online - checkout requests a proforma invoice.
       </p>
     </div>
   );

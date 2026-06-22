@@ -1,5 +1,5 @@
 // Pallet products sold on the storefront. Each entry is a fixed, ready-to-ship
-// bulk pallet — this is what the simple e-commerce grid lists. Swap for a
+// bulk pallet - this is what the simple e-commerce grid lists. Swap for a
 // Supabase `pallets` table later (shapes map 1:1).
 
 import type { CategoryId, Pallet } from "@/lib/types";

@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 /*
-  House of Alex — B2B Wholesale Liquidation Portal
+  House of Alex - B2B Wholesale Liquidation Portal
   Clean light corporate theme: white surfaces, sharp 1px borders, red accent.
 */
 
 @theme {
-  --color-brand: #dc2626; /* red-600 — primary accent */
+  --color-brand: #dc2626; /* red-600 - primary accent */
   --color-brand-dark: #b91c1c; /* red-700 */
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

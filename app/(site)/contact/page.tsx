@@ -12,6 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { sendContactMessage } from "./actions";
 
 interface ContactForm {
   name: string;
@@ -41,11 +42,19 @@ const SUBJECTS = [
 export default function ContactPage() {
   const [form, setForm] = useState<ContactForm>(EMPTY);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO(resend): forward this enquiry to the trade desk via Resend.
-    console.log("[contact] enquiry submitted:", form);
+    setSending(true);
+    setError(null);
+    const result = await sendContactMessage(form);
+    setSending(false);
+    if (!result.ok) {
+      setError(result.error ?? "Something went wrong. Please try again.");
+      return;
+    }
     setSent(true);
     setForm(EMPTY);
   }
@@ -77,8 +86,8 @@ export default function ContactPage() {
               </span>
               <h2 className="mt-6 text-xl font-bold text-slate-900">Message sent</h2>
               <p className="mt-2 max-w-sm text-slate-600">
-                Thanks — your enquiry has been logged. A member of the trade desk will be in
-                touch shortly.
+                Thanks - your enquiry has been sent to our trade desk. A member of the team
+                will be in touch shortly.
               </p>
               <Button variant="secondary" className="mt-6" onClick={() => setSent(false)}>
                 Send another message
@@ -136,9 +145,14 @@ export default function ContactPage() {
                   placeholder="Tell us about the volumes, categories and timelines you're working with…"
                 />
               </Field>
-              <Button type="submit" size="lg" className="w-full sm:w-auto">
+              {error && (
+                <div className="border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={sending}>
                 <Send className="h-4 w-4" />
-                Send message
+                {sending ? "Sending…" : "Send message"}
               </Button>
             </form>
           )}
@@ -159,8 +173,8 @@ export default function ContactPage() {
             icon={MapPin}
             title="Dispatch locations"
             rows={[
-              "Primary hub — Rotterdam, NL",
-              "UK hub — Felixstowe, GB",
+              "Primary hub - Rotterdam, NL",
+              "UK hub - Felixstowe, GB",
               "Bonded warehousing available",
             ]}
           />
@@ -168,8 +182,8 @@ export default function ContactPage() {
             icon={Headset}
             title="Direct support lines"
             rows={[
-              "Trade desk — +31 10 123 4567",
-              "Logistics — +44 1394 123 456",
+              "Trade desk - +31 10 123 4567",
+              "Logistics - +44 1394 123 456",
               "trade@houseofalex.example",
             ]}
           />

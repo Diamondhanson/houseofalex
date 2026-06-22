@@ -5,6 +5,7 @@ import { ClipboardList, LayoutGrid } from "lucide-react";
 import { OrdersTable } from "@/components/admin/OrdersTable";
 import { PalletsManager } from "@/components/admin/PalletsManager";
 import { cn } from "@/lib/cn";
+import type { AdminOrder, Pallet } from "@/lib/types";
 
 type Tab = "orders" | "catalogue";
 
@@ -13,7 +14,13 @@ const TABS: Array<{ id: Tab; label: string; icon: typeof ClipboardList }> = [
   { id: "catalogue", label: "Pallets & Categories", icon: LayoutGrid },
 ];
 
-export default function AdminPage() {
+export function AdminDashboard({
+  orders,
+  pallets,
+}: {
+  orders: AdminOrder[];
+  pallets: Pallet[];
+}) {
   const [tab, setTab] = useState<Tab>("orders");
 
   return (
@@ -47,7 +54,11 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {tab === "orders" ? <OrdersTable /> : <PalletsManager />}
+      {tab === "orders" ? (
+        <OrdersTable allOrders={orders} />
+      ) : (
+        <PalletsManager initialPallets={pallets} />
+      )}
     </div>
   );
 }
