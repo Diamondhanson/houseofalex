@@ -1,0 +1,73 @@
+// Dummy order records for the admin dashboard. Replace with a Supabase
+// `orders` table query later (the AdminOrder shape maps 1:1 onto columns).
+
+import type { AdminOrder } from "@/lib/types";
+
+export const DUMMY_ORDERS: AdminOrder[] = [
+  {
+    reference: "HOA-24812",
+    company: "Northgate Trading Ltd",
+    contactName: "Priya Sharma",
+    tierName: "Distributor Pallet",
+    pieces: 100,
+    total: 1350.0,
+    status: "invoiced",
+    placedAt: "2026-06-18",
+    breakdown: ["Creed ×24", "Dior ×30", "Chanel ×26", "Tom Ford ×20"],
+  },
+  {
+    reference: "HOA-24809",
+    company: "Lumière Cosmetics SARL",
+    contactName: "Olivier Bernard",
+    tierName: "Trade Pallet",
+    pieces: 60,
+    total: 864.0,
+    status: "paid",
+    placedAt: "2026-06-17",
+    breakdown: ["MAC ×20", "NARS ×18", "Charlotte Tilbury ×22"],
+  },
+  {
+    reference: "HOA-24803",
+    company: "Apex Resellers GmbH",
+    contactName: "Lena Vogt",
+    tierName: "Starter Pallet",
+    pieces: 40,
+    total: 608.0,
+    status: "dispatched",
+    placedAt: "2026-06-15",
+    breakdown: ["Nike ×16", "Adidas ×14", "Puma ×10"],
+  },
+  {
+    reference: "HOA-24798",
+    company: "Souk Distribution FZE",
+    contactName: "Karim Haddad",
+    tierName: "Distributor Pallet",
+    pieces: 100,
+    total: 1350.0,
+    status: "pending",
+    placedAt: "2026-06-14",
+    breakdown: ["Versace ×40", "Paco Rabanne ×30", "YSL ×30"],
+  },
+  {
+    reference: "HOA-24790",
+    company: "Brightway Wholesale Co",
+    contactName: "Daniel Okafor",
+    tierName: "Trade Pallet",
+    pieces: 60,
+    total: 864.0,
+    status: "cancelled",
+    placedAt: "2026-06-12",
+    breakdown: ["Dior ×30", "Chanel ×30"],
+  },
+  {
+    reference: "HOA-24781",
+    company: "Vista Retail Group",
+    contactName: "Sofia Marchetti",
+    tierName: "Starter Pallet",
+    pieces: 40,
+    total: 608.0,
+    status: "invoiced",
+    placedAt: "2026-06-10",
+    breakdown: ["Tom Ford ×20", "Creed ×20"],
+  },
+];
