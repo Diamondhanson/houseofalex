@@ -138,6 +138,13 @@ export const PRODUCTS: Product[] = [
 export const getCategory = (id: string) =>
   CATEGORIES.find((c) => c.id === id);
 
+/** Human-readable fallback label for a category id not in the static seed. */
+export const prettifyCategoryId = (id: string) =>
+  (id || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+
 export const getBrand = (id: string) => BRANDS.find((b) => b.id === id);
 
 export const getProduct = (id: string) =>

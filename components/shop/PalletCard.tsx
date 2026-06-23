@@ -3,14 +3,21 @@
 import Link from "next/link";
 import { Check, Minus, Plus, ShoppingCart } from "lucide-react";
 import { usePallet } from "@/lib/context/PalletContext";
-import { getCategory } from "@/lib/data/catalog";
+import { getCategory, prettifyCategoryId } from "@/lib/data/catalog";
 import { formatGBP } from "@/lib/format";
 import type { Pallet } from "@/lib/types";
 
-export function PalletCard({ pallet }: { pallet: Pallet }) {
+export function PalletCard({
+  pallet,
+  categoryLabel,
+}: {
+  pallet: Pallet;
+  categoryLabel?: string;
+}) {
   const { qtyOf, add, remove } = usePallet();
   const qty = qtyOf(pallet.id);
-  const category = getCategory(pallet.categoryId);
+  const label =
+    categoryLabel ?? getCategory(pallet.categoryId)?.label ?? prettifyCategoryId(pallet.categoryId);
   const href = `/shop/${pallet.id}`;
 
   return (
@@ -24,9 +31,11 @@ export function PalletCard({ pallet }: { pallet: Pallet }) {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <span className="absolute left-0 top-0 bg-slate-900 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white">
-          {category?.label}
-        </span>
+        {label && (
+          <span className="absolute left-0 top-0 bg-slate-900 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white">
+            {label}
+          </span>
+        )}
         <span className="absolute right-0 top-0 bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white">
           {pallet.pieces} units
         </span>

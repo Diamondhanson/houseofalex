@@ -3,21 +3,22 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { CATEGORIES } from "@/lib/data/catalog";
 import { usePallet } from "@/lib/context/PalletContext";
 import { formatGBP } from "@/lib/format";
 import { PalletCard } from "@/components/shop/PalletCard";
 import { cn } from "@/lib/cn";
-import type { CategoryId, Pallet } from "@/lib/types";
+import type { Category, CategoryId, Pallet } from "@/lib/types";
 
 type Filter = "all" | CategoryId;
 
 export function ShopGrid({
   initialCategory,
   allPallets,
+  categories,
 }: {
   initialCategory: Filter;
   allPallets: Pallet[];
+  categories: Category[];
 }) {
   const [filter, setFilter] = useState<Filter>(initialCategory);
   const { totalPallets, totalCost } = usePallet();
@@ -27,9 +28,14 @@ export function ShopGrid({
     [filter, allPallets],
   );
 
+  const labelOf = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.label])),
+    [categories],
+  );
+
   const tabs: Array<{ id: Filter; label: string }> = [
     { id: "all", label: "All Pallets" },
-    ...CATEGORIES.map((c) => ({ id: c.id as Filter, label: c.label })),
+    ...categories.map((c) => ({ id: c.id as Filter, label: c.label })),
   ];
 
   return (
@@ -61,7 +67,7 @@ export function ShopGrid({
       {/* Grid */}
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {pallets.map((p) => (
-          <PalletCard key={p.id} pallet={p} />
+          <PalletCard key={p.id} pallet={p} categoryLabel={labelOf.get(p.categoryId)} />
         ))}
       </div>
 

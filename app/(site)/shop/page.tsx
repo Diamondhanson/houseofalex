@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ShopGrid } from "@/components/shop/ShopGrid";
-import { CATEGORIES } from "@/lib/data/catalog";
 import { getStorefrontPallets } from "@/lib/data/pallets-source";
+import { getCategories } from "@/lib/data/categories-source";
 import type { CategoryId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -12,17 +12,19 @@ export const metadata: Metadata = {
     "Browse ready-to-ship wholesale pallets - perfumes, cosmetics and footwear. Add to cart and request a proforma invoice.",
 };
 
-const VALID = new Set(CATEGORIES.map((c) => c.id));
-
 export default async function ShopPage({
   searchParams,
 }: {
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
+  const [allPallets, categories] = await Promise.all([
+    getStorefrontPallets(),
+    getCategories(),
+  ]);
+  const valid = new Set(categories.map((c) => c.id));
   const initialCategory: CategoryId | "all" =
-    category && VALID.has(category as CategoryId) ? (category as CategoryId) : "all";
-  const allPallets = await getStorefrontPallets();
+    category && valid.has(category) ? category : "all";
 
   return (
     <div className="bg-white">
@@ -43,7 +45,11 @@ export default async function ShopPage({
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <ShopGrid initialCategory={initialCategory} allPallets={allPallets} />
+        <ShopGrid
+          initialCategory={initialCategory}
+          allPallets={allPallets}
+          categories={categories}
+        />
       </div>
     </div>
   );

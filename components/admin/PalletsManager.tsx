@@ -3,18 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageIcon, Layers, Pencil, Plus, Tag, Trash2, UploadCloud } from "lucide-react";
-import { CATEGORIES, PALLET_TIERS } from "@/lib/data/catalog";
+import { PALLET_TIERS, prettifyCategoryId } from "@/lib/data/catalog";
 import { formatGBP } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { SideSheet } from "@/components/admin/SideSheet";
+import { ImageInput } from "@/components/admin/ImageInput";
+import { PalletImagesField } from "@/components/admin/PalletImagesField";
 import { cn } from "@/lib/cn";
-import type { CategoryId, Pallet } from "@/lib/types";
+import type { Category, Pallet } from "@/lib/types";
 import {
   createPallet,
   updatePallet,
   deletePallet,
   setPalletActive,
+  createCategory,
+  updateCategory,
+  deleteCategory as deleteCategoryAction,
   type PalletInput,
+  type CategoryInput,
 } from "@/app/admin/(dashboard)/actions";
 
 // Each pallet (offer) can carry up to 4 images.
@@ -24,13 +30,20 @@ const MAX_IMAGES = 4;
 interface PalletDraft {
   id: string;
   name: string;
-  categoryId: CategoryId;
+  categoryId: string;
   pieces: number;
   unitPrice: number;
   brands: string; // comma-separated in the form
   condition: string;
   images: string[]; // 1..MAX_IMAGES
   active: boolean;
+}
+
+interface CategoryDraft {
+  id: string | null; // null = creating
+  label: string;
+  tagline: string;
+  image: string;
 }
 
 const toDraft = (p: Pallet): PalletDraft => ({
@@ -45,10 +58,10 @@ const toDraft = (p: Pallet): PalletDraft => ({
   active: p.active ?? true,
 });
 
-const blank = (): PalletDraft => ({
+const blank = (categoryId: string): PalletDraft => ({
   id: "",
   name: "",
-  categoryId: CATEGORIES[0].id,
+  categoryId,
   pieces: 60,
   unitPrice: 14.4,
   brands: "",
@@ -57,7 +70,6 @@ const blank = (): PalletDraft => ({
   active: true,
 });
 
-const labelFor = (id: string) => CATEGORIES.find((c) => c.id === id)?.label ?? id;
 const totalPrice = (d: PalletDraft) => Math.round(d.pieces * d.unitPrice * 100) / 100;
 const coverImage = (d: PalletDraft) => d.images.find((src) => src) ?? "";
 const imageCount = (d: PalletDraft) => d.images.filter((src) => src).length;
@@ -74,20 +86,42 @@ const toInput = (d: PalletDraft): PalletInput => ({
   active: d.active,
 });
 
-export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] }) {
+export function PalletsManager({
+  initialPallets,
+  initialCategories,
+}: {
+  initialPallets: Pallet[];
+  initialCategories: Category[];
+}) {
   const router = useRouter();
   const [pallets, setPallets] = useState<PalletDraft[]>(initialPallets.map(toDraft));
-  const [categories, setCategories] = useState(CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [brackets, setBrackets] = useState(PALLET_TIERS.map((t) => ({ ...t })));
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [draft, setDraft] = useState<PalletDraft>(blank());
+  const [draft, setDraft] = useState<PalletDraft>(blank(""));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
 
+  // Category editor (shared by the Categories panel + the "New" button in the form).
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
+  const [catDraft, setCatDraft] = useState<CategoryDraft>({
+    id: null,
+    label: "",
+    tagline: "",
+    image: "",
+  });
+  const [catSaving, setCatSaving] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
+  // When a category is created from inside the pallet form, auto-select it.
+  const [selectAfterCreate, setSelectAfterCreate] = useState(false);
+
+  const labelFor = (id: string) =>
+    categories.find((c) => c.id === id)?.label || prettifyCategoryId(id) || "Uncategorised";
+
   function openAdd() {
-    setDraft(blank());
+    setDraft(blank(categories[0]?.id ?? ""));
     setEditingId(null);
     setSheetError(null);
     setSheetOpen(true);
@@ -103,6 +137,10 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
   async function save() {
     if (!draft.name.trim()) {
       setSheetError("Pallet name is required.");
+      return;
+    }
+    if (!draft.categoryId) {
+      setSheetError("Pick or create a category first.");
       return;
     }
     setSaving(true);
@@ -154,29 +192,67 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
     router.refresh();
   }
 
-  // --- image slots (1..MAX_IMAGES per pallet) ---
-  function addImage() {
-    setDraft((d) => (d.images.length >= MAX_IMAGES ? d : { ...d, images: [...d.images, ""] }));
+  // --- category CRUD ---
+  function openCategoryAdd(forPallet: boolean) {
+    setCatDraft({ id: null, label: "", tagline: "", image: "" });
+    setSelectAfterCreate(forPallet);
+    setCatError(null);
+    setCatSheetOpen(true);
   }
-  function removeImage(index: number) {
-    setDraft((d) =>
-      d.images.length <= 1 ? d : { ...d, images: d.images.filter((_, i) => i !== index) },
+  function openCategoryEdit(c: Category) {
+    setCatDraft({ id: c.id, label: c.label, tagline: c.tagline, image: c.image });
+    setSelectAfterCreate(false);
+    setCatError(null);
+    setCatSheetOpen(true);
+  }
+
+  async function saveCategory() {
+    if (!catDraft.label.trim()) {
+      setCatError("Category name is required.");
+      return;
+    }
+    setCatSaving(true);
+    setCatError(null);
+    const input: CategoryInput = {
+      label: catDraft.label,
+      tagline: catDraft.tagline,
+      image: catDraft.image,
+    };
+    const result = catDraft.id
+      ? await updateCategory(catDraft.id, input)
+      : await createCategory(input);
+    setCatSaving(false);
+
+    if (!result.ok || !result.id) {
+      setCatError(result.error ?? "Could not save the category.");
+      return;
+    }
+
+    const saved: Category = {
+      id: result.id,
+      label: catDraft.label.trim(),
+      tagline: catDraft.tagline.trim(),
+      image: catDraft.image.trim(),
+    };
+    setCategories((prev) =>
+      catDraft.id ? prev.map((c) => (c.id === catDraft.id ? saved : c)) : [...prev, saved],
     );
-  }
-  function updateImage(index: number, value: string) {
-    setDraft((d) => ({
-      ...d,
-      images: d.images.map((src, i) => (i === index ? value : src)),
-    }));
-  }
-
-  function deleteCategory(id: string) {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
-    console.log("[admin] category removed:", id);
+    if (selectAfterCreate && !catDraft.id) {
+      setDraft((d) => ({ ...d, categoryId: saved.id }));
+    }
+    setCatSheetOpen(false);
+    router.refresh();
   }
 
-  function updateBracket(id: string, unitPrice: number) {
-    setBrackets((prev) => prev.map((b) => (b.id === id ? { ...b, unitPrice } : b)));
+  async function removeCategory(id: string) {
+    const prev = categories;
+    setCategories((cs) => cs.filter((c) => c.id !== id)); // optimistic
+    const result = await deleteCategoryAction(id);
+    if (!result.ok) {
+      setCategories(prev); // rollback
+      return;
+    }
+    router.refresh();
   }
 
   return (
@@ -325,7 +401,13 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
                     step="0.01"
                     min="0"
                     value={b.unitPrice}
-                    onChange={(e) => updateBracket(b.id, Number(e.target.value))}
+                    onChange={(e) =>
+                      setBrackets((prev) =>
+                        prev.map((x) =>
+                          x.id === b.id ? { ...x, unitPrice: Number(e.target.value) } : x,
+                        ),
+                      )
+                    }
                     className="w-full border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
                   />
                   <span className="whitespace-nowrap text-xs text-slate-500">/ unit</span>
@@ -344,34 +426,67 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
         </section>
 
         <section className="border border-slate-200 bg-white p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
-            <Tag className="h-4 w-4 text-red-600" />
-            Categories
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
+              <Tag className="h-4 w-4 text-red-600" />
+              Categories
+            </h2>
+            <Button size="sm" variant="secondary" onClick={() => openCategoryAdd(false)}>
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+          </div>
           <ul className="mt-4 space-y-2">
             {categories.map((c) => (
               <li
                 key={c.id}
-                className="flex items-center justify-between border border-slate-200 bg-slate-50 px-3 py-2.5"
+                className="flex items-center justify-between gap-2 border border-slate-200 bg-slate-50 px-3 py-2.5"
               >
-                <div>
-                  <div className="text-sm font-medium text-slate-900">{c.label}</div>
-                  <div className="text-[11px] text-slate-500">
-                    {pallets.filter((p) => p.categoryId === c.id).length} pallets
+                <div className="flex min-w-0 items-center gap-3">
+                  {c.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.image}
+                      alt={c.label}
+                      loading="lazy"
+                      className="h-9 w-9 shrink-0 border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-200 bg-white text-slate-400">
+                      <Tag className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-slate-900">{c.label}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {pallets.filter((p) => p.categoryId === c.id).length} pallets
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => deleteCategory(c.id)}
-                  className="flex h-8 w-8 items-center justify-center border border-slate-300 text-slate-500 transition-colors hover:border-red-400 hover:text-red-600"
-                  aria-label={`Delete ${c.label}`}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openCategoryEdit(c)}
+                    className="flex h-8 w-8 items-center justify-center border border-slate-300 text-slate-500 transition-colors hover:border-red-400 hover:text-red-600"
+                    aria-label={`Edit ${c.label}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(c.id)}
+                    className="flex h-8 w-8 items-center justify-center border border-slate-300 text-slate-500 transition-colors hover:border-red-400 hover:text-red-600"
+                    aria-label={`Delete ${c.label}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </li>
             ))}
             {categories.length === 0 && (
-              <li className="py-4 text-center text-xs text-slate-500">All categories removed.</li>
+              <li className="py-4 text-center text-xs text-slate-500">
+                No categories yet. Add one to start listing offers.
+              </li>
             )}
           </ul>
         </section>
@@ -381,6 +496,7 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
       <SideSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        widthClass="max-w-xl"
         title={editingId ? "Edit pallet" : "Upload new pallet"}
         description={
           editingId
@@ -411,77 +527,16 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
         }
       >
         <div className="space-y-5">
-          {/* Images - up to MAX_IMAGES per offer */}
+          {/* Images - select multiple at once, up to MAX_IMAGES per offer */}
           <SheetField label={`Pallet images (${imageCount(draft)}/${MAX_IMAGES})`}>
             <p className="-mt-0.5 mb-2 text-xs text-slate-500">
-              Add up to {MAX_IMAGES} images. The first becomes the cover image.
+              Select up to {MAX_IMAGES} images at once. The first is the cover image.
             </p>
-            <div className="space-y-3">
-              {draft.images.map((src, i) => (
-                <div key={i} className="border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Image {i + 1}
-                      {i === 0 && (
-                        <span className="ml-1.5 font-normal normal-case text-red-600">· cover</span>
-                      )}
-                    </span>
-                    {draft.images.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeImage(i)}
-                        className="flex h-6 w-6 items-center justify-center text-slate-400 transition-colors hover:text-red-600"
-                        aria-label={`Remove image ${i + 1}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  {src ? (
-                    <div className="relative mt-2 border border-slate-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={src}
-                        alt={`Pallet image ${i + 1}`}
-                        className="aspect-[4/3] w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => updateImage(i, "")}
-                        className="absolute right-2 top-2 bg-white/90 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white"
-                      >
-                        Replace
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex flex-col items-center justify-center border border-dashed border-slate-300 bg-white px-4 py-5 text-center">
-                      <UploadCloud className="h-6 w-6 text-slate-400" />
-                      <p className="mt-1.5 text-xs font-medium text-slate-700">Drag & drop (mock)</p>
-                      <p className="text-[11px] text-slate-500">or paste an image URL below</p>
-                    </div>
-                  )}
-                  <input
-                    value={src}
-                    onChange={(e) => updateImage(i, e.target.value)}
-                    className={`${inputCls} mt-2`}
-                    placeholder="https://…/pallet.jpg"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={addImage}
-              disabled={draft.images.length >= MAX_IMAGES}
-              className="mt-3 flex w-full items-center justify-center gap-2 border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" />
-              {draft.images.length >= MAX_IMAGES
-                ? "Maximum of 4 images reached"
-                : "Add another image"}
-            </button>
+            <PalletImagesField
+              images={draft.images}
+              onChange={(imgs) => setDraft((d) => ({ ...d, images: imgs }))}
+              max={MAX_IMAGES}
+            />
           </SheetField>
 
           <SheetField label="Pallet name" required>
@@ -494,17 +549,29 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
           </SheetField>
 
           <SheetField label="Category">
-            <select
-              value={draft.categoryId}
-              onChange={(e) => setDraft({ ...draft, categoryId: e.target.value as CategoryId })}
-              className={inputCls}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={draft.categoryId}
+                onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })}
+                className={inputCls}
+              >
+                {categories.length === 0 && <option value="">No categories yet</option>}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => openCategoryAdd(true)}
+                className="inline-flex shrink-0 items-center gap-1.5 border border-slate-300 px-3 text-sm font-medium text-slate-700 transition-colors hover:border-red-400 hover:text-red-600"
+                title="Add a new category"
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </button>
+            </div>
           </SheetField>
 
           <div className="grid grid-cols-2 gap-4">
@@ -562,6 +629,67 @@ export function PalletsManager({ initialPallets }: { initialPallets: Pallet[] })
             />
             <span className="text-sm text-slate-700">Publish to storefront immediately</span>
           </label>
+        </div>
+      </SideSheet>
+
+      {/* Category editor side sheet (create / edit) */}
+      <SideSheet
+        open={catSheetOpen}
+        onClose={() => setCatSheetOpen(false)}
+        title={catDraft.id ? "Edit category" : "New category"}
+        description={
+          catDraft.id
+            ? "Update this category. Changes apply across the storefront."
+            : "Create a category for your offers. It appears in the shop filter and homepage."
+        }
+        footer={
+          <div>
+            {catError && (
+              <div className="mb-3 border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {catError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setCatSheetOpen(false)}
+                disabled={catSaving}
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={saveCategory} disabled={catSaving}>
+                {catSaving ? "Saving…" : catDraft.id ? "Save changes" : "Create category"}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <SheetField label="Category name" required>
+            <input
+              value={catDraft.label}
+              onChange={(e) => setCatDraft({ ...catDraft, label: e.target.value })}
+              className={inputCls}
+              placeholder="e.g. Electronics"
+            />
+          </SheetField>
+
+          <SheetField label="Tagline">
+            <input
+              value={catDraft.tagline}
+              onChange={(e) => setCatDraft({ ...catDraft, tagline: e.target.value })}
+              className={inputCls}
+              placeholder="Short blurb shown on the storefront card"
+            />
+          </SheetField>
+
+          <SheetField label="Category image">
+            <ImageInput
+              value={catDraft.image}
+              onChange={(url) => setCatDraft({ ...catDraft, image: url })}
+            />
+          </SheetField>
         </div>
       </SideSheet>
     </div>

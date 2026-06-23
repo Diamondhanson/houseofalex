@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Boxes, ShieldCheck, Truck } from "lucide-react";
 import { getStorefrontPallet, getStorefrontPallets } from "@/lib/data/pallets-source";
-import { getCategory } from "@/lib/data/catalog";
+import { getCategories } from "@/lib/data/categories-source";
+import { prettifyCategoryId } from "@/lib/data/catalog";
 import { PalletPurchasePanel } from "@/components/shop/PalletPurchasePanel";
+import { PalletGallery } from "@/components/shop/PalletGallery";
 import { PalletCard } from "@/components/shop/PalletCard";
 
 export const dynamic = "force-dynamic";
@@ -38,8 +40,14 @@ export default async function PalletDetailPage({
   const pallet = await getStorefrontPallet(id);
   if (!pallet) notFound();
 
-  const category = getCategory(pallet.categoryId);
-  const related = (await getStorefrontPallets())
+  const [categories, allPallets] = await Promise.all([
+    getCategories(),
+    getStorefrontPallets(),
+  ]);
+  const catLabel =
+    categories.find((c) => c.id === pallet.categoryId)?.label ??
+    prettifyCategoryId(pallet.categoryId);
+  const related = allPallets
     .filter((p) => p.categoryId === pallet.categoryId && p.id !== pallet.id)
     .slice(0, 3);
 
@@ -57,7 +65,7 @@ export default async function PalletDetailPage({
               href={`/shop?category=${pallet.categoryId}`}
               className="transition-colors hover:text-red-600"
             >
-              {category?.label}
+              {catLabel}
             </Link>
             <span>/</span>
             <span className="text-slate-900">{pallet.name}</span>
@@ -77,17 +85,11 @@ export default async function PalletDetailPage({
         <div className="mt-6 grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Image */}
           <div>
-            <div className="relative border border-slate-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pallet.image}
-                alt={pallet.name}
-                className="aspect-[4/3] w-full object-cover"
-              />
-              <span className="absolute left-0 top-0 bg-slate-900 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">
-                {category?.label}
-              </span>
-            </div>
+            <PalletGallery
+              images={pallet.images && pallet.images.length ? pallet.images : [pallet.image]}
+              alt={pallet.name}
+              badge={catLabel}
+            />
 
             {/* Trust strip */}
             <ul className="mt-5 grid gap-2.5 sm:grid-cols-3">
@@ -107,7 +109,7 @@ export default async function PalletDetailPage({
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">{pallet.name}</h1>
             <p className="mt-3 leading-relaxed text-slate-600">
-              A ready-to-ship {category?.label.toLowerCase()} pallet containing{" "}
+              A ready-to-ship {catLabel.toLowerCase()} pallet containing{" "}
               <span className="font-medium text-slate-900">{pallet.pieces} units</span> of mixed,
               authenticated stock. {pallet.condition}. Supplied with export documentation and
               dispatched from our EU or UK hub.
@@ -144,11 +146,11 @@ export default async function PalletDetailPage({
         {related.length > 0 && (
           <section className="mt-16 border-t border-slate-200 pt-10">
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              More {category?.label.toLowerCase()} pallets
+              More {catLabel.toLowerCase()} pallets
             </h2>
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((p) => (
-                <PalletCard key={p.id} pallet={p} />
+                <PalletCard key={p.id} pallet={p} categoryLabel={catLabel} />
               ))}
             </div>
           </section>

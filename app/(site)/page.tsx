@@ -9,8 +9,8 @@ import {
   Truck,
 } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
-import { CATEGORIES } from "@/lib/data/catalog";
 import { getStorefrontPallets } from "@/lib/data/pallets-source";
+import { getCategories } from "@/lib/data/categories-source";
 import { PalletCard } from "@/components/shop/PalletCard";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +47,12 @@ const STATS = [
 ];
 
 export default async function HomePage() {
-  const featured = (await getStorefrontPallets()).slice(0, 3);
+  const [allPallets, categories] = await Promise.all([
+    getStorefrontPallets(),
+    getCategories(),
+  ]);
+  const featured = allPallets.slice(0, 3);
+  const labelOf = new Map(categories.map((c) => [c.id, c.label]));
 
   return (
     <div className="bg-white">
@@ -125,20 +130,26 @@ export default async function HomePage() {
           subtitle="Jump straight into the assortment that fits your retail floor."
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               href={`/shop?category=${cat.id}`}
               className="group flex flex-col border border-slate-200 bg-white transition-colors hover:border-slate-300"
             >
               <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={cat.image}
-                  alt={cat.label}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                {cat.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cat.image}
+                    alt={cat.label}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-xl font-bold uppercase tracking-wider text-slate-400">
+                    {cat.label.slice(0, 2)}
+                  </div>
+                )}
               </div>
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="text-base font-semibold text-slate-900">{cat.label}</h3>
@@ -174,7 +185,7 @@ export default async function HomePage() {
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((p) => (
-              <PalletCard key={p.id} pallet={p} />
+              <PalletCard key={p.id} pallet={p} categoryLabel={labelOf.get(p.categoryId)} />
             ))}
           </div>
         </div>

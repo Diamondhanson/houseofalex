@@ -10,6 +10,8 @@ interface SideSheetProps {
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Tailwind max-width class for the panel. Defaults to max-w-md. */
+  widthClass?: string;
 }
 
 export function SideSheet({
@@ -19,6 +21,7 @@ export function SideSheet({
   description,
   children,
   footer,
+  widthClass = "max-w-md",
 }: SideSheetProps) {
   // Close on Escape + lock body scroll while open.
   useEffect(() => {
@@ -45,7 +48,9 @@ export function SideSheet({
       />
 
       {/* Panel */}
-      <div className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl">
+      <div
+        className={`absolute right-0 top-0 flex h-full w-full ${widthClass} flex-col border-l border-slate-200 bg-white shadow-xl`}
+      >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">{title}</h2>

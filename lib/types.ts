@@ -1,7 +1,9 @@
 // Shared domain types for the House of Alex wholesale portal.
 // Kept framework-agnostic so a Supabase data layer can map onto these directly.
 
-export type CategoryId = "perfume-full" | "perfume-mini" | "makeup" | "shoes";
+// Categories are admin-managed at runtime, so an id is any slug string.
+// The static seed in catalog.ts still uses the original four ids.
+export type CategoryId = string;
 
 export interface Category {
   id: CategoryId;

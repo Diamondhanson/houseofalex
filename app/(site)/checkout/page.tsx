@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { usePallet } from "@/lib/context/PalletContext";
-import { getCategory } from "@/lib/data/catalog";
+import { getCategory, prettifyCategoryId } from "@/lib/data/catalog";
 import { formatGBP } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
@@ -174,7 +174,9 @@ export default function CheckoutPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {lines.map(({ pallet, qty }) => {
-                    const category = getCategory(pallet.categoryId);
+                    const catLabel =
+                      getCategory(pallet.categoryId)?.label ??
+                      prettifyCategoryId(pallet.categoryId);
                     return (
                       <tr key={pallet.id}>
                         <td className="px-5 py-4">
@@ -189,7 +191,7 @@ export default function CheckoutPage() {
                             <div>
                               <div className="font-medium text-slate-900">{pallet.name}</div>
                               <div className="text-xs text-slate-500">
-                                {category?.label} · {pallet.pieces} units
+                                {catLabel} · {pallet.pieces} units
                               </div>
                             </div>
                           </div>

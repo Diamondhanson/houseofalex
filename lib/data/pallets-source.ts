@@ -11,7 +11,7 @@ import type { CategoryId, Pallet } from "@/lib/types";
 interface PalletRow {
   id: string;
   name: string;
-  category_id: CategoryId;
+  category_id: CategoryId | null;
   pieces: number;
   unit_price: number | string;
   price: number | string;
@@ -26,7 +26,7 @@ function rowToPallet(row: PalletRow): Pallet {
   return {
     id: row.id,
     name: row.name,
-    categoryId: row.category_id,
+    categoryId: row.category_id ?? "",
     pieces: row.pieces,
     unitPrice: Number(row.unit_price),
     price: Number(row.price),
