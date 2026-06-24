@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, Globe2, ShieldCheck, Truck, Warehouse } from "lucide-react";
+import { Globe2, ShieldCheck, Truck, Warehouse } from "lucide-react";
 import { CONTACT, mailtoLink, telLink, whatsappLink } from "@/lib/data/contact";
 import { SocialLinks } from "@/components/ui/SocialLinks";
 
@@ -18,9 +18,8 @@ export function Footer() {
           {/* Brand + highlights */}
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center bg-red-600 text-white">
-                <Boxes className="h-5 w-5" />
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.png" alt="House of Alex" className="h-9 w-9 object-contain" />
               <span className="text-lg font-bold tracking-tight text-slate-900">
                 House of Alex
               </span>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Boxes, Menu, ShoppingCart, X } from "lucide-react";
+import { Menu, ShoppingCart, X } from "lucide-react";
 import { usePallet } from "@/lib/context/PalletContext";
 import { cn } from "@/lib/cn";
 
@@ -24,9 +24,8 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center bg-red-600 text-white">
-            <Boxes className="h-5 w-5" />
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="House of Alex" className="h-9 w-9 object-contain" />
           <span className="flex flex-col leading-none">
             <span className="text-base font-bold tracking-tight text-slate-900">
               House of Alex
