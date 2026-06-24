@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "whatsapp";
 type Size = "sm" | "md" | "lg";
 
 // Sharp, square corporate buttons - no glow, 1px borders.
@@ -15,6 +15,7 @@ const variants: Record<Variant, string> = {
     "border border-slate-300 bg-white text-slate-900 hover:border-slate-400 hover:bg-slate-50",
   ghost: "text-slate-700 hover:bg-slate-100",
   danger: "border border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+  whatsapp: "bg-[#25D366] text-white hover:bg-[#1ebe5d]",
 };
 
 const sizes: Record<Size, string> = {
