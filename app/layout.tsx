@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "House of Alex - B2B Wholesale Liquidation",
+    default: "House of Alex - Wholesale & Clearance Stock Supplier",
     template: "%s · House of Alex",
   },
   description:

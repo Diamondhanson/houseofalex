@@ -1,13 +1,27 @@
 @import "tailwindcss";
 
 /*
-  House of Alex - B2B Wholesale Liquidation Portal
+  House of Alex - B2B Wholesale & Clearance Stock Supplier
   Clean light corporate theme: white surfaces, sharp 1px borders, red accent.
 */
 
 @theme {
-  --color-brand: #dc2626; /* red-600 - primary accent */
-  --color-brand-dark: #b91c1c; /* red-700 */
+  /* Punchier red accent — softer than the vivid default, but still pops. */
+  --color-brand: #d63838; /* red-600 - primary accent */
+  --color-brand-dark: #be2f2f; /* red-700 */
+
+  /* Override Tailwind's red scale so every red-* utility uses the new accent. */
+  --color-red-50: #fdf3f3;
+  --color-red-100: #fbe4e4;
+  --color-red-200: #f6c9c9;
+  --color-red-300: #f09e9e;
+  --color-red-400: #ea7373;
+  --color-red-500: #e05050;
+  --color-red-600: #d63838;
+  --color-red-700: #be2f2f;
+  --color-red-800: #9f2a2a;
+  --color-red-900: #842727;
+  --color-red-950: #481414;
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;

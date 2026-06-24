@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Original source images (resized copies live in public/)
+Assets/
+.DS_Store

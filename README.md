@@ -1,4 +1,4 @@
-# House of Alex — B2B Wholesale Liquidation Portal
+# House of Alex — B2B Wholesale & Clearance Stock Supplier
 
 A modern, corporate B2B storefront for selling **bulk merchandise by the pallet** —
 perfumes, cosmetics and footwear. Buyers browse ready-to-ship pallets, add them to a

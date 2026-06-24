@@ -14,7 +14,7 @@ import { ButtonLink } from "@/components/ui/Button";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "House of Alex is a B2B wholesale liquidation house supplying authenticated premium stock to trade buyers.",
+    "House of Alex is a B2B wholesale and clearance stock supplier of authenticated premium stock for trade buyers.",
 };
 
 const ABOUT_IMG =
@@ -73,7 +73,7 @@ export default function AboutPage() {
               About the House
             </span>
             <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-              A liquidation house built for serious trade buyers.
+              A wholesale supplier built for serious trade buyers.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
               House of Alex consolidates authenticated, original premium stock -

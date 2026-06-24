@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 
 const LINKS = [
   { href: "/shop", label: "Shop" },
+  { href: "/categories", label: "Categories" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -31,7 +32,7 @@ export function Navbar() {
               House of Alex
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-red-600">
-              Wholesale Liquidation
+              Wholesale & Clearance Supply
             </span>
           </span>
         </Link>

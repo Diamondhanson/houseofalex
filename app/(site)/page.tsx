@@ -12,11 +12,17 @@ import { ButtonLink } from "@/components/ui/Button";
 import { getStorefrontPallets } from "@/lib/data/pallets-source";
 import { getCategories } from "@/lib/data/categories-source";
 import { PalletCard } from "@/components/shop/PalletCard";
+import { CategoryCard } from "@/components/shop/CategoryCard";
+import { ImageRotator } from "@/components/ui/ImageRotator";
 
 export const dynamic = "force-dynamic";
 
-const HERO_IMG =
-  "https://images.unsplash.com/photo-1601598851547-4302969d0614?auto=format&fit=crop&w=1100&q=70";
+const HERO_IMAGES = [
+  "/hero/hero-1.jpg",
+  "/hero/hero-2.jpg",
+  "/hero/hero-3.jpg",
+  "/hero/hero-4.jpg",
+];
 
 const PROCESS = [
   {
@@ -62,7 +68,7 @@ export default async function HomePage() {
           <div>
             <span className="inline-flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-red-700">
               <Truck className="h-3.5 w-3.5" />
-              Trade-only wholesale liquidation
+              Trade-only wholesale & clearance supply
             </span>
             <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
               Original premium stock,{" "}
@@ -94,13 +100,14 @@ export default async function HomePage() {
 
           {/* Hero image */}
           <div className="relative border border-slate-200">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={HERO_IMG}
-              alt="Pallets of bulk inventory in a warehouse"
-              className="aspect-[4/3] w-full object-cover"
+            <ImageRotator
+              images={HERO_IMAGES}
+              alt="House of Alex wholesale and clearance stock"
+              className="aspect-[4/3] w-full"
+              interval={3500}
+              eager
             />
-            <div className="absolute bottom-0 left-0 bg-white px-4 py-3 shadow-sm">
+            <div className="absolute bottom-0 left-0 z-10 bg-white px-4 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-wider text-slate-500">From</div>
               <div className="text-lg font-bold text-slate-900">
                 £13.50 <span className="text-sm font-medium text-slate-500">/ unit</span>
@@ -129,41 +136,19 @@ export default async function HomePage() {
           title="Browse by category"
           subtitle="Jump straight into the assortment that fits your retail floor."
         />
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/shop?category=${cat.id}`}
-              className="group flex flex-col border border-slate-200 bg-white transition-colors hover:border-slate-300"
-            >
-              <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                {cat.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={cat.image}
-                    alt={cat.label}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-xl font-bold uppercase tracking-wider text-slate-400">
-                    {cat.label.slice(0, 2)}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-base font-semibold text-slate-900">{cat.label}</h3>
-                <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-600">
-                  {cat.tagline}
-                </p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600">
-                  Shop now
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              </div>
-            </Link>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.slice(0, 6).map((cat) => (
+            <CategoryCard key={cat.id} category={cat} />
           ))}
         </div>
+        {categories.length > 6 && (
+          <div className="mt-8 flex justify-center">
+            <ButtonLink href="/categories" variant="secondary" size="lg">
+              View all categories
+              <ArrowRight className="h-4 w-4" />
+            </ButtonLink>
+          </div>
+        )}
       </section>
 
       {/* ───────────────────────── FEATURED PALLETS ───────────────────────── */}

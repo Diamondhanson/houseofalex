@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Boxes, Globe2, ShieldCheck, Truck, Warehouse } from "lucide-react";
+import { CONTACT, mailtoLink, telLink, whatsappLink } from "@/lib/data/contact";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 
 const HIGHLIGHTS = [
   { icon: Warehouse, label: "120,000 sq ft EU bonded warehousing" },
@@ -24,9 +26,9 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
-              A B2B liquidation house supplying authenticated, original premium
-              stock to resellers, distributors and retail groups - by the pallet,
-              with transparent volume pricing.
+              A B2B wholesale and clearance stock supplier, providing authenticated,
+              original premium stock to resellers, distributors and retail groups - by
+              the pallet, with transparent volume pricing.
             </p>
             <ul className="mt-6 grid gap-2.5">
               {HIGHLIGHTS.map(({ icon: Icon, label }) => (
@@ -36,6 +38,12 @@ export function Footer() {
                 </li>
               ))}
             </ul>
+            <div className="mt-6">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Follow & message us
+              </h3>
+              <SocialLinks className="mt-3" />
+            </div>
           </div>
 
           {/* Quick links */}
@@ -68,11 +76,24 @@ export function Footer() {
               Operations
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
-              <li>Trade desk: Mon–Fri, 08:00–18:00 CET</li>
-              <li>Dispatch hub: Rotterdam · Felixstowe</li>
               <li>
-                <a href="mailto:trade@houseofalex.example" className="transition-colors hover:text-red-600">
-                  trade@houseofalex.example
+                <a href={telLink} className="transition-colors hover:text-red-600">
+                  Call or text: {CONTACT.phoneDisplay}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={whatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-red-600"
+                >
+                  WhatsApp: {CONTACT.phoneDisplay}
+                </a>
+              </li>
+              <li>
+                <a href={mailtoLink} className="transition-colors hover:text-red-600">
+                  {CONTACT.email}
                 </a>
               </li>
               <li>

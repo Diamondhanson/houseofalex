@@ -8,10 +8,14 @@ import {
   Headset,
   Mail,
   MapPin,
+  MessageCircle,
   Phone,
   Send,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { SocialLinks } from "@/components/ui/SocialLinks";
+import { CONTACT, mailtoLink, telLink, whatsappLink } from "@/lib/data/contact";
 import { sendContactMessage } from "./actions";
 
 interface ContactForm {
@@ -178,15 +182,45 @@ export default function ContactPage() {
               "Bonded warehousing available",
             ]}
           />
-          <InfoCard
-            icon={Headset}
-            title="Direct support lines"
-            rows={[
-              "Trade desk - +31 10 123 4567",
-              "Logistics - +44 1394 123 456",
-              "trade@houseofalex.example",
-            ]}
-          />
+          <div className="border border-slate-200 bg-white p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center bg-red-50 text-red-600">
+                <Headset className="h-4 w-4" />
+              </span>
+              <h3 className="text-sm font-semibold text-slate-900">Direct support</h3>
+            </div>
+            <ul className="mt-3 space-y-2.5 text-sm">
+              <li>
+                <a
+                  href={telLink}
+                  className="flex items-center gap-2.5 text-slate-600 transition-colors hover:text-red-600"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-red-600" />
+                  Call or text {CONTACT.phoneDisplay}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={whatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 text-slate-600 transition-colors hover:text-red-600"
+                >
+                  <MessageCircle className="h-4 w-4 shrink-0 text-red-600" />
+                  WhatsApp {CONTACT.phoneDisplay}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={mailtoLink}
+                  className="flex items-center gap-2.5 text-slate-600 transition-colors hover:text-red-600"
+                >
+                  <Mail className="h-4 w-4 shrink-0 text-red-600" />
+                  {CONTACT.email}
+                </a>
+              </li>
+            </ul>
+          </div>
           <div className="border border-red-200 bg-red-50 p-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Building2 className="h-4 w-4 text-red-600" />
@@ -196,14 +230,30 @@ export default function ContactPage() {
               Select &ldquo;New trade account&rdquo; as your subject and include your VAT/EORI
               number for faster onboarding.
             </p>
-            <div className="mt-3 flex items-center gap-2 text-sm font-medium text-red-700">
+            <a
+              href={mailtoLink}
+              className="mt-3 flex items-center gap-2 text-sm font-medium text-red-700 transition-colors hover:text-red-800"
+            >
               <Mail className="h-4 w-4" />
-              accounts@houseofalex.example
-            </div>
-            <div className="mt-1 flex items-center gap-2 text-sm font-medium text-red-700">
+              {CONTACT.email}
+            </a>
+            <a
+              href={telLink}
+              className="mt-1 flex items-center gap-2 text-sm font-medium text-red-700 transition-colors hover:text-red-800"
+            >
               <Phone className="h-4 w-4" />
-              +31 10 123 4500
+              {CONTACT.phoneDisplay}
+            </a>
+          </div>
+
+          <div className="border border-slate-200 bg-white p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center bg-red-50 text-red-600">
+                <Share2 className="h-4 w-4" />
+              </span>
+              <h3 className="text-sm font-semibold text-slate-900">Follow &amp; message us</h3>
             </div>
+            <SocialLinks className="mt-3" />
           </div>
         </aside>
       </div>
