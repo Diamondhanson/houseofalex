@@ -103,13 +103,13 @@ export function PalletImagesField({
                   Cover
                 </span>
               )}
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-slate-900/70 p-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-slate-900/70 p-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 {i !== 0 && (
                   <button
                     type="button"
                     onClick={() => makeCover(i)}
                     title="Make cover"
-                    className="flex h-6 w-6 items-center justify-center bg-white/90 text-slate-700 hover:bg-white"
+                    className="flex h-7 w-7 items-center justify-center bg-white/90 text-slate-700 hover:bg-white"
                   >
                     <Star className="h-3.5 w-3.5" />
                   </button>
@@ -118,7 +118,7 @@ export function PalletImagesField({
                   type="button"
                   onClick={() => removeAt(i)}
                   title="Remove"
-                  className="flex h-6 w-6 items-center justify-center bg-white/90 text-slate-700 hover:bg-white hover:text-red-600"
+                  className="flex h-7 w-7 items-center justify-center bg-white/90 text-slate-700 hover:bg-white hover:text-red-600"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -154,15 +154,18 @@ export function PalletImagesField({
             <>
               <UploadCloud className="h-6 w-6 text-slate-400" />
               <p className="mt-1.5 text-xs font-medium text-slate-700">
-                Drag &amp; drop up to {remaining} image{remaining > 1 ? "s" : ""}
+                Add up to {remaining} image{remaining > 1 ? "s" : ""}
+              </p>
+              <p className="mt-0.5 hidden text-[11px] text-slate-400 sm:block">
+                Drag &amp; drop, or use the button below
               </p>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="mt-2 inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400"
+                className="mt-2 inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400"
               >
                 <ImageIcon className="h-3.5 w-3.5" />
-                Choose multiple from computer
+                Choose or take photo{remaining > 1 ? "s" : ""}
               </button>
             </>
           )}

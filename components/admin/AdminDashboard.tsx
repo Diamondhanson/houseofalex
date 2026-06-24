@@ -39,14 +39,14 @@ export function AdminDashboard({
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 inline-flex border border-slate-200 bg-white p-1">
+      <div className="mb-6 flex border border-slate-200 bg-white p-1 sm:inline-flex">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors",
+              "flex flex-1 items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors sm:flex-none sm:px-4",
               tab === id ? "bg-red-600 text-white" : "text-slate-600 hover:text-slate-900",
             )}
           >

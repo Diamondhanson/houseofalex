@@ -275,7 +275,103 @@ export function PalletsManager({
           </Button>
         </div>
 
-        <div className="max-h-[34rem] overflow-auto">
+        {/* Mobile: card list (the table is too wide for phones) */}
+        <ul className="divide-y divide-slate-200 md:hidden">
+          {pallets.map((p) => (
+            <li key={p.id} className="p-4">
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  {coverImage(p) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={coverImage(p)}
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-16 w-16 border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-16 w-16 items-center justify-center border border-slate-200 bg-slate-50 text-slate-400">
+                      <ImageIcon className="h-5 w-5" />
+                    </span>
+                  )}
+                  {imageCount(p) > 1 && (
+                    <span
+                      className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center gap-0.5 bg-red-600 px-1 text-[10px] font-bold text-white"
+                      title={`${imageCount(p)} images`}
+                    >
+                      <ImageIcon className="h-2.5 w-2.5" />
+                      {imageCount(p)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-slate-900">
+                        {p.name || "Untitled"}
+                      </div>
+                      <div className="truncate text-xs text-slate-500">
+                        {labelFor(p.categoryId)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggle(p.id)}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ring-1 ring-inset transition-colors",
+                        p.active
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                          : "bg-slate-100 text-slate-500 ring-slate-300",
+                      )}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      {p.active ? "Live" : "Hidden"}
+                    </button>
+                  </div>
+                  {p.brands && (
+                    <div className="mt-1 truncate text-xs text-slate-500">{p.brands}</div>
+                  )}
+                  <div className="mt-2 flex items-end justify-between gap-2">
+                    <div className="text-xs tabular-nums text-slate-600">
+                      {p.pieces} units
+                      <span className="mx-1.5 text-slate-300">·</span>
+                      {formatGBP(p.unitPrice)}/u
+                      <span className="mt-0.5 block font-semibold text-slate-900">
+                        {formatGBP(totalPrice(p))}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        className="flex h-9 w-9 items-center justify-center border border-slate-300 text-slate-500 transition-colors hover:border-red-400 hover:text-red-600"
+                        aria-label={`Edit ${p.name}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(p.id)}
+                        className="flex h-9 w-9 items-center justify-center border border-slate-300 text-slate-500 transition-colors hover:border-red-400 hover:text-red-600"
+                        aria-label={`Delete ${p.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+          {pallets.length === 0 && (
+            <li className="px-5 py-12 text-center text-sm text-slate-500">
+              No pallets. Use “Upload New Pallet” to add one.
+            </li>
+          )}
+        </ul>
+
+        {/* Desktop: full table */}
+        <div className="hidden max-h-[34rem] overflow-auto md:block">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-slate-50">
               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wider text-slate-500">

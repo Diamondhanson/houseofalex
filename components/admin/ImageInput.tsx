@@ -79,14 +79,17 @@ export function ImageInput({
           ) : (
             <>
               <UploadCloud className="h-6 w-6 text-slate-400" />
-              <p className="mt-1.5 text-xs font-medium text-slate-700">Drag & drop an image</p>
+              <p className="mt-1.5 text-xs font-medium text-slate-700">Add an image</p>
+              <p className="mt-0.5 hidden text-[11px] text-slate-400 sm:block">
+                Drag &amp; drop, or use the button below
+              </p>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="mt-2 inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400"
+                className="mt-2 inline-flex items-center gap-1.5 border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400"
               >
                 <ImageIcon className="h-3.5 w-3.5" />
-                Choose from computer
+                Choose or take photo
               </button>
             </>
           )}

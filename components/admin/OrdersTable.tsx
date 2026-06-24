@@ -84,8 +84,49 @@ export function OrdersTable({ allOrders }: { allOrders: AdminOrder[] }) {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border border-slate-200 bg-white">
+      {/* Mobile: card list (the table is too wide for phones) */}
+      <ul className="divide-y divide-slate-200 border border-slate-200 bg-white md:hidden">
+        {orders.map((o) => (
+          <li key={o.reference}>
+            <button
+              type="button"
+              onClick={() => setSelected(o)}
+              className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-red-600">
+                    {o.reference}
+                  </span>
+                  <StatusBadge status={o.status} />
+                </div>
+                <div className="mt-1.5 truncate text-sm font-medium text-slate-900">
+                  {o.company}
+                </div>
+                <div className="truncate text-xs text-slate-500">{o.contactName}</div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-600">
+                  <span className="truncate">{o.tierName}</span>
+                  <span className="shrink-0 tabular-nums">
+                    {o.pieces} pcs
+                    <span className="mx-1.5 text-slate-300">·</span>
+                    <span className="font-semibold text-slate-900">{formatGBP(o.total)}</span>
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] text-slate-400">{formatDate(o.placedAt)}</div>
+              </div>
+              <Eye className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+          </li>
+        ))}
+        {orders.length === 0 && (
+          <li className="px-5 py-12 text-center text-sm text-slate-500">
+            No orders match your filters.
+          </li>
+        )}
+      </ul>
+
+      {/* Desktop: full table */}
+      <div className="hidden border border-slate-200 bg-white md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
