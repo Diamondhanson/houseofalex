@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   },
   description:
     "Authenticated, original premium wholesale stock - perfumes, cosmetics, clothing and electronics - sold by the pallet with automated volume pricing.",
+  verification: {
+    google: "rcH05F7rFmdlBqxZzLo1WwVCSxDTdEWoQpC8Ruz60Yk",
+  },
 };
 
 export default function RootLayout({
